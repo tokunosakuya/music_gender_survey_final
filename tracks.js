@@ -68,7 +68,8 @@ const BUCKET_NAME = 'audio';
 
 // 3. 파일 경로를 Supabase URL로 자동 매핑
 const TRACKS = RAW_TRACKS.map(track => {
-  const encodedPath = track.file
+  const cleanPath = track.file.replace(/^audio_trimmed\//, '');
+  const encodedPath = cleanPath
     .split('/')
     .map(part => encodeURIComponent(part))
     .join('/');
