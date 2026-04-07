@@ -1,4 +1,3 @@
-console.log("tracks.js start loaded");
 // 1. 원본 데이터 리스트 (60개)
 const RAW_TRACKS = [
   { "id": "track_001", "file": "audio_trimmed/Suno_blues_feminine 3_cut.wav", "original_name": "Suno_blues_feminine 3_cut.wav", "genre": "blues", "style": "feminine" },
@@ -82,6 +81,6 @@ const TRACKS = RAW_TRACKS.map(track => {
 });
 
 window.TRACKS = TRACKS;
-console.log("tracks.js end loaded");
+
 console.log("TRACKS loaded:", TRACKS.length);
 console.log("First URL:", TRACKS[0].file);
