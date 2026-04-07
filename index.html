@@ -253,9 +253,11 @@
   // =========================
   // 5. 유틸
   // =========================
-  function saveProgress(jsPsych) {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(jsPsych.data.get().values()));
-  }
+  function saveProgress(trialData) {
+  const saved = getSavedProgress();
+  saved.push(trialData);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+}
 
   function clearSurveyState() {
     localStorage.removeItem(SAVE_KEY);
@@ -534,25 +536,21 @@
     };
   }
 
-  async function saveResultsToSupabase(jsPsych, participantId, assignment) {
-    const previousData = getSavedProgress();
-    const currentData = jsPsych.data.get().values();
+ async function saveResultsToSupabase(jsPsych, participantId, assignment) {
+  const allData = getSavedProgress();
+  const payload = extractStructuredData(allData, participantId, assignment);
 
-    const allData = previousData.length > 0 ? previousData : currentData;
-    const payload = extractStructuredData(allData, participantId, assignment);
+  const { error } = await supabaseClient
+    .from("survey_results")
+    .insert([payload]);
 
-    const { error } = await supabaseClient
-      .from("survey_results")
-      .insert([payload]);
-
-    if (error) {
-      console.error("응답 저장 실패:", error);
-      throw error;
-    }
-
-    console.log("응답 저장 성공");
+  if (error) {
+    console.error("응답 저장 실패:", error);
+    throw error;
   }
 
+  console.log("응답 저장 성공");
+}
   // =========================
   // 9. 메인 실행
   // =========================
@@ -583,13 +581,12 @@
       const submitConfirmDone = savedProgress.some(row => row.trial_type === "html-button-response" && row.page_type === "submit_confirm");
 
       const jsPsych = initJsPsych({
-        show_progress_bar: true,
-        auto_update_progress_bar: true,
-        on_trial_finish: function() {
-          saveProgress(jsPsych);
-        }
-      });
-
+  show_progress_bar: true,
+  auto_update_progress_bar: true,
+  on_trial_finish: function(data) {
+    saveProgress(data);
+  }
+});
       let timeline = [];
 
       // 시작 화면
