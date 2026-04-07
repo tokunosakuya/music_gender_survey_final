@@ -535,24 +535,23 @@
   }
 
   async function saveResultsToSupabase(jsPsych, participantId, assignment) {
-  const previousData = getSavedProgress();
-  const currentData = jsPsych.data.get().values();
+    const previousData = getSavedProgress();
+    const currentData = jsPsych.data.get().values();
 
-  const allData = [...previousData, ...currentData];
-  const payload = extractStructuredData(allData, participantId, assignment);
+    const allData = previousData.length > 0 ? previousData : currentData;
+    const payload = extractStructuredData(allData, participantId, assignment);
 
-  const { error } = await supabaseClient
-    .from("survey_results")
-    .insert([payload]);
+    const { error } = await supabaseClient
+      .from("survey_results")
+      .insert([payload]);
 
-  if (error) {
-    console.error("응답 저장 실패:", error);
-    throw error;
+    if (error) {
+      console.error("응답 저장 실패:", error);
+      throw error;
+    }
+
+    console.log("응답 저장 성공");
   }
-
-  console.log("응답 저장 성공");
-}
-  
 
   // =========================
   // 9. 메인 실행
@@ -591,7 +590,6 @@
         }
       });
 
-     
       let timeline = [];
 
       // 시작 화면
@@ -829,215 +827,212 @@
             </div>
           `,
           button_label: "다음 곡으로",
-on_load: function() {
-  const container = document;
-  const form = container.querySelector("#jspsych-survey-html-form");
-  const nextBtn = container.querySelector("#jspsych-survey-html-form-next");
-  const audio = container.querySelector("#trial-audio");
-  const audioStatus = container.querySelector("#audio-status");
-  const errorBox = container.querySelector("#validation-error");
-  const backBtn = container.querySelector("#back-btn");
-  const hasListened = { value: false };
+          on_load: function() {
+            const container = document;
+            const form = container.querySelector("#jspsych-survey-html-form");
+            const nextBtn = container.querySelector("#jspsych-survey-html-form-next");
+            const audio = container.querySelector("#trial-audio");
+            const audioStatus = container.querySelector("#audio-status");
+            const errorBox = container.querySelector("#validation-error");
+            const backBtn = container.querySelector("#back-btn");
+            const hasListened = { value: false };
 
-  setupSliders(container);
-  setupConditionalQuestions(container);
+            setupSliders(container);
+            setupConditionalQuestions(container);
 
-  if (nextBtn) nextBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = true;
 
-  if (audio) {
-    audio.addEventListener("ended", function() {
-      hasListened.value = true;
-      if (nextBtn) nextBtn.disabled = false;
-      audioStatus.textContent = "청취 완료. 이제 제출할 수 있습니다.";
-      audioStatus.classList.add("done");
-    });
-  }
+            if (audio) {
+              audio.addEventListener("ended", function() {
+                hasListened.value = true;
+                if (nextBtn) nextBtn.disabled = false;
+                audioStatus.textContent = "청취 완료. 이제 제출할 수 있습니다.";
+                audioStatus.classList.add("done");
+              });
+            }
 
-  if (backBtn) {
-    if (idx === 0) {
-      backBtn.style.visibility = "hidden";
-    } else {
-      backBtn.addEventListener("click", function() {
-        removeLastCompletedMusicTrialFromProgress();
-        window.location.reload();
+            if (backBtn) {
+              if (idx === 0) {
+                backBtn.style.visibility = "hidden";
+              } else {
+                backBtn.addEventListener("click", function() {
+                  removeLastCompletedMusicTrialFromProgress();
+                  window.location.reload();
+                });
+              }
+            }
+
+            form.addEventListener("submit", function(e) {
+              const q1 = document.querySelector('input[name="q1"]')?.value || "";
+              const q2 = document.querySelector('input[name="q2"]')?.value || "";
+              const q5 = document.querySelector('input[name="q5"]')?.value || "";
+              const q1_1 = document.querySelector('input[name="q1_1"]')?.value || "";
+              const q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
+              const q3 = getCheckedValues("q3");
+              const q4 = getCheckedValues("q4");
+
+              const errors = [];
+
+              if (!hasListened.value) {
+                errors.push("음악을 끝까지 한 번 들어야 다음으로 넘어갈 수 있습니다.");
+              }
+
+              if (!q1) errors.push("Q1에 응답해 주세요.");
+              if (!q2) errors.push("Q2에 응답해 주세요.");
+              if (!q5) errors.push("Q5에 응답해 주세요.");
+              if (q3.length === 0) errors.push("Q3에서 최소 1개를 선택해 주세요.");
+              if (q4.length === 0) errors.push("Q4에서 최소 1개를 선택해 주세요.");
+
+              if ((q1 === "3" || q1 === "4") && !q1_1) {
+                errors.push("Q1-1에 응답해 주세요.");
+              }
+
+              if ((q1 === "1" || q1 === "2") && !q1_2) {
+                errors.push("Q1-2에 응답해 주세요.");
+              }
+
+              if (errors.length > 0) {
+                e.preventDefault();
+                errorBox.textContent = errors.join("\n");
+                window.scrollTo({ top: 0, behavior: "smooth" });
+                return false;
+              } else {
+                errorBox.textContent = "";
+              }
+            });
+          },
+          on_finish: function(data) {
+            const response = data.response || {};
+
+            response.q1 = document.querySelector('input[name="q1"]')?.value || "";
+            response.q1_1 = document.querySelector('input[name="q1_1"]')?.value || "";
+            response.q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
+            response.q2 = document.querySelector('input[name="q2"]')?.value || "";
+            response.q3 = getCheckedValues("q3");
+            response.q4 = getCheckedValues("q4");
+            response.q5 = document.querySelector('input[name="q5"]')?.value || "";
+
+            data.response = response;
+          }
+        });
+      }
+
+      // 자유 서술
+      if (!freeResponseDone) {
+        timeline.push({
+          type: jsPsychSurveyHtmlForm,
+          data: {
+            page_type: "free_response",
+            participant_id: participantId
+          },
+          preamble: `
+            <div class="survey-wrap">
+              <h2>마지막 자유 서술 문항</h2>
+              <p>모든 음악을 들은 뒤의 전체적인 인상을 적어주세요.</p>
+            </div>
+          `,
+          html: `
+            <div class="question-block">
+              <div class="question-title">1. 설문에서 젠더 이미지를 판단할 때 본인이 주로 어떤 기준을 사용했다고 생각하시나요?</div>
+              <p class="note">예: 음악학적 지식, 자신의 교육 경험, 문화적 편견, 잘 모르겠다 등</p>
+              <textarea name="free_criteria"></textarea>
+            </div>
+
+            <div class="question-block">
+              <div class="question-title">2. 전체적으로 어떤 특징의 음악이 ‘남성적’이라고 느껴졌나요?</div>
+              <textarea name="free_masculine"></textarea>
+            </div>
+
+            <div class="question-block">
+              <div class="question-title">3. 전체적으로 어떤 특징의 음악이 ‘여성적’이라고 느껴졌나요?</div>
+              <textarea name="free_feminine"></textarea>
+            </div>
+
+            <div class="question-block">
+              <div class="question-title">4. 판단하기 어려운 경우(잘 모르겠거나, 중성적임)가 있었다면 왜 어려웠던 것 같으신가요?</div>
+              <textarea name="free_difficulty"></textarea>
+            </div>
+
+            <div class="question-block">
+              <div class="question-title">5. 음악의 ‘젠더성’(여성적인 음악, 남성적인 음악)이라는 것이 있다고 생각하시나요? 있다면 어떤 음악일까요?</div>
+              <textarea name="free_gendered_music"></textarea>
+            </div>
+          `,
+          button_label: "제출하기"
+        });
+      }
+
+      // 제출 화면
+      if (!submitConfirmDone) {
+        timeline.push({
+          type: jsPsychHtmlButtonResponse,
+          data: { page_type: "submit_confirm", participant_id: participantId },
+          stimulus: `
+            <div class="survey-wrap">
+              <h2>마지막 단계입니다</h2>
+              <p>응답을 저장하시려면 아래 버튼을 눌러주세요.</p>
+            </div>
+          `,
+          choices: ["응답 제출하기"]
+        });
+      }
+
+      // 실제 저장
+      timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+          <div class="save-box" id="save-box">
+            <h2>응답 저장 중입니다...</h2>
+            <p>잠시만 기다려주세요.</p>
+          </div>
+        `,
+        choices: [],
+        on_load: function() {
+          const box = document.getElementById("save-box");
+
+          const trySave = async () => {
+            box.innerHTML = `
+              <h2>응답 저장 중입니다...</h2>
+              <p>잠시만 기다려주세요.</p>
+            `;
+
+            try {
+              await saveResultsToSupabase(jsPsych, participantId, assignment);
+              clearSurveyState();
+
+              box.innerHTML = `
+                <h2>설문이 완료되었습니다.</h2>
+                <p>참여해주셔서 감사합니다.</p>
+                <p class="note">연구자 측 DB에 응답이 저장되었습니다.</p>
+                <div class="save-actions">
+                  <button id="finish-close">종료</button>
+                </div>
+              `;
+
+              document.getElementById("finish-close").addEventListener("click", function() {
+                window.location.reload();
+              });
+            } catch (e) {
+              console.error("응답 저장 실패:", e);
+
+              box.innerHTML = `
+                <h2>응답 저장에 실패했습니다.</h2>
+                <p>
+                  네트워크 문제 또는 저장 설정 문제일 수 있습니다.<br>
+                  아래 버튼으로 다시 저장을 시도해 주세요.
+                </p>
+                <div class="save-actions">
+                  <button id="retry-save">다시 저장하기</button>
+                </div>
+              `;
+
+              document.getElementById("retry-save").addEventListener("click", trySave);
+            }
+          };
+
+          trySave();
+        }
       });
-    }
-  }
-
-  form.addEventListener("submit", function(e) {
-    const q1 = document.querySelector('input[name="q1"]')?.value || "";
-    const q2 = document.querySelector('input[name="q2"]')?.value || "";
-    const q5 = document.querySelector('input[name="q5"]')?.value || "";
-    const q1_1 = document.querySelector('input[name="q1_1"]')?.value || "";
-    const q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
-    const q3 = getCheckedValues("q3");
-    const q4 = getCheckedValues("q4");
-
-    const errors = [];
-
-    if (!hasListened.value) {
-      errors.push("음악을 끝까지 한 번 들어야 다음으로 넘어갈 수 있습니다.");
-    }
-
-    if (!q1) errors.push("Q1에 응답해 주세요.");
-    if (!q2) errors.push("Q2에 응답해 주세요.");
-    if (!q5) errors.push("Q5에 응답해 주세요.");
-    if (q3.length === 0) errors.push("Q3에서 최소 1개를 선택해 주세요.");
-    if (q4.length === 0) errors.push("Q4에서 최소 1개를 선택해 주세요.");
-
-    if ((q1 === "3" || q1 === "4") && !q1_1) {
-      errors.push("Q1-1에 응답해 주세요.");
-    }
-
-    if ((q1 === "1" || q1 === "2") && !q1_2) {
-      errors.push("Q1-2에 응답해 주세요.");
-    }
-
-    if (errors.length > 0) {
-      e.preventDefault();
-      errorBox.textContent = errors.join("\n");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return false;
-    } else {
-      errorBox.textContent = "";
-    }
-  });
-},
-on_finish: function(data) {
-  const response = data.response || {};
-
-  response.q1 = document.querySelector('input[name="q1"]')?.value || "";
-  response.q1_1 = document.querySelector('input[name="q1_1"]')?.value || "";
-  response.q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
-  response.q2 = document.querySelector('input[name="q2"]')?.value || "";
-  response.q3 = getCheckedValues("q3");
-  response.q4 = getCheckedValues("q4");
-  response.q5 = document.querySelector('input[name="q5"]')?.value || "";
-
-  data.response = response;
-}
-        });
-      }
-
-     // 자유 서술
-if (!freeResponseDone) {
-  timeline.push({
-    type: jsPsychSurveyHtmlForm,
-    data: {
-      page_type: "free_response",
-      participant_id: participantId
-    },
-    preamble: `
-      <div class="survey-wrap">
-        <h2>마지막 자유 서술 문항</h2>
-        <p>모든 음악을 들은 뒤의 전체적인 인상을 적어주세요.</p>
-      </div>
-    `,
-    html: `
-      <div class="question-block">
-        <div class="question-title">1. 설문에서 젠더 이미지를 판단할 때 본인이 주로 어떤 기준을 사용했다고 생각하시나요?</div>
-        <p class="note">예: 음악학적 지식, 자신의 교육 경험, 문화적 편견, 잘 모르겠다 등</p>
-        <textarea name="free_criteria"></textarea>
-      </div>
-
-      <div class="question-block">
-        <div class="question-title">2. 전체적으로 어떤 특징의 음악이 ‘남성적’이라고 느껴졌나요?</div>
-        <textarea name="free_masculine"></textarea>
-      </div>
-
-      <div class="question-block">
-        <div class="question-title">3. 전체적으로 어떤 특징의 음악이 ‘여성적’이라고 느껴졌나요?</div>
-        <textarea name="free_feminine"></textarea>
-      </div>
-
-      <div class="question-block">
-        <div class="question-title">4. 판단하기 어려운 경우(잘 모르겠거나, 중성적임)가 있었다면 왜 어려웠던 것 같으신가요?</div>
-        <textarea name="free_difficulty"></textarea>
-      </div>
-
-      <div class="question-block">
-        <div class="question-title">5. 음악의 ‘젠더성’(여성적인 음악, 남성적인 음악)이라는 것이 있다고 생각하시나요? 있다면 어떤 음악일까요?</div>
-        <textarea name="free_gendered_music"></textarea>
-      </div>
-    `,
-    button_label: "제출하기"
-  });
-}
-      }
-
-     // 제출 화면
-if (!submitConfirmDone) {
-  timeline.push({
-    type: jsPsychHtmlButtonResponse,
-    data: { page_type: "submit_confirm", participant_id: participantId },
-    stimulus: `
-      <div class="survey-wrap">
-        <h2>마지막 단계입니다</h2>
-        <p>응답을 저장하시려면 아래 버튼을 눌러주세요.</p>
-      </div>
-    `,
-    choices: ["응답 제출하기"]
-  });
-}
-      }
-
-    // 실제 저장
-timeline.push({
-  type: jsPsychHtmlButtonResponse,
-  stimulus: `
-    <div class="save-box" id="save-box">
-      <h2>응답 저장 중입니다...</h2>
-      <p>잠시만 기다려주세요.</p>
-    </div>
-  `,
-  choices: [],
-  on_load: function() {
-    const box = document.getElementById("save-box");
-
-    const trySave = async () => {
-      box.innerHTML = `
-        <h2>응답 저장 중입니다...</h2>
-        <p>잠시만 기다려주세요.</p>
-      `;
-
-      try {
-        await saveResultsToSupabase(jsPsych, participantId, assignment);
-        clearSurveyState();
-
-        box.innerHTML = `
-          <h2>설문이 완료되었습니다.</h2>
-          <p>참여해주셔서 감사합니다.</p>
-          <p class="note">연구자 측 DB에 응답이 저장되었습니다.</p>
-          <div class="save-actions">
-            <button id="finish-close">종료</button>
-          </div>
-        `;
-
-        document.getElementById("finish-close").addEventListener("click", function() {
-          window.location.reload();
-        });
-      } catch (e) {
-        console.error("응답 저장 실패:", e);
-
-        box.innerHTML = `
-          <h2>응답 저장에 실패했습니다.</h2>
-          <p>
-            네트워크 문제 또는 저장 설정 문제일 수 있습니다.<br>
-            아래 버튼으로 다시 저장을 시도해 주세요.
-          </p>
-          <div class="save-actions">
-            <button id="retry-save">다시 저장하기</button>
-          </div>
-        `;
-
-        document.getElementById("retry-save").addEventListener("click", trySave);
-      }
-    };
-
-    trySave();
-  }
-});
-      }
 
       jsPsych.run(timeline);
 
@@ -1054,3 +1049,4 @@ timeline.push({
   })();
 </script>
 </html>
+ 
