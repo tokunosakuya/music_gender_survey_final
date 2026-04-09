@@ -237,11 +237,11 @@
   // 3. localStorage key
   // =========================
   const SAVE_KEY = "music_gender_survey_progress_v5";
-  const ASSIGNMENT_KEY = "music_gender_assignment_v5";
-  const PARTICIPANT_ID_KEY = "music_gender_participant_id_v5";
-  const LISTENED_KEY = "music_gender_listened_v1";
-  const BACKUP_MUSIC_RESPONSE_KEY = "music_gender_backup_response_v1";
-
+const ASSIGNMENT_KEY = "music_gender_assignment_v5";
+const PARTICIPANT_ID_KEY = "music_gender_participant_id_v5";
+const LISTENED_KEY = "music_gender_listened_v1";
+const BACKUP_MUSIC_RESPONSE_KEY = "music_gender_backup_response_v1";
+const MUSIC_RESPONSE_MAP_KEY = "music_gender_response_map_v1";
   // =========================
   // 4. 버전별 장르 세트
   // =========================
@@ -277,6 +277,7 @@
   localStorage.removeItem(PARTICIPANT_ID_KEY);
   localStorage.removeItem(LISTENED_KEY);
   localStorage.removeItem(BACKUP_MUSIC_RESPONSE_KEY);
+  localStorage.removeItem(MUSIC_RESPONSE_MAP_KEY);
 }
 
   function getCheckedValue(name) {
@@ -496,6 +497,17 @@ function getSavedMusicResponse(trackId) {
   }
 
   return null;
+}
+
+  function saveMusicResponse(trackId, response) {
+  const map = JSON.parse(localStorage.getItem(MUSIC_RESPONSE_MAP_KEY) || "{}");
+  map[trackId] = response;
+  localStorage.setItem(MUSIC_RESPONSE_MAP_KEY, JSON.stringify(map));
+}
+
+function getMusicResponse(trackId) {
+  const map = JSON.parse(localStorage.getItem(MUSIC_RESPONSE_MAP_KEY) || "{}");
+  return map[trackId] || null;
 }
   // =========================
   // 6. Supabase에서 전역 버전 가져오기
@@ -877,9 +889,8 @@ function getSavedMusicResponse(trackId) {
             setupSliders(container);
             setupConditionalQuestions(container);
 
-            const savedResponse =
-  getSavedMusicResponse(track.id) || getBackedUpMusicResponse(track.id);
-
+            const savedResponse = getMusicResponse(track.id);
+            
 if (savedResponse) {
   // slider(hidden input) 복원
   ["q1", "q1_1", "q1_2", "q2", "q5"].forEach(name => {
@@ -1030,8 +1041,11 @@ if (savedResponse) {
             response.q3_other_text = document.querySelector('input[name="q3_other_text"]')?.value || "";
             response.q4_other_text = document.querySelector('input[name="q4_other_text"]')?.value || "";
 
-            data.response = response;
-            const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
+           data.response = response;
+saveMusicResponse(track.id, response);
+
+const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
+            
 if (backupRaw) {
   try {
     const backup = JSON.parse(backupRaw);
