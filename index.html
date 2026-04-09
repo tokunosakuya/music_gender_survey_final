@@ -788,21 +788,10 @@
             </div>
 
             <div class="question-block">
-              <div class="question-title">Q4. 이 음악은 다음 중 어떤 장르적 인상에 가장 가까웠나요? (복수응답 가능)</div>
-              <label><input type="checkbox" name="q4" value="rock"> 락 계열</label>
-              <label><input type="checkbox" name="q4" value="metal"> 메탈 계열</label>
-              <label><input type="checkbox" name="q4" value="pop"> 팝 계열</label>
-              <label><input type="checkbox" name="q4" value="hiphop"> 힙합 계열</label>
-              <label><input type="checkbox" name="q4" value="classical"> 클래식 계열</label>
-              <label><input type="checkbox" name="q4" value="disco"> 디스코 계열</label>
-              <label><input type="checkbox" name="q4" value="reggae"> 레게 계열</label>
-              <label><input type="checkbox" name="q4" value="country"> 컨츄리 음악 계열</label>
-              <label><input type="checkbox" name="q4" value="blues"> 블루스 계열</label>
-              <label><input type="checkbox" name="q4" value="jazz"> 재즈 계열</label>
-              <label><input type="checkbox" name="q4" value="other"> 기타</label>
-              <label><input type="checkbox" name="q4" value="unknown"> 잘 모르겠음</label>
-              <input type="text" name="q4_other_text" placeholder="기타 내용을 적어주세요 (선택)" />
-            </div>
+  <div class="question-title">Q4. 이 음악은 다음 중 어떤 장르적 인상에 가장 가까웠나요?</div>
+  <label><input type="checkbox" name="q4" value="unknown"> 잘 모르겠음</label>
+  <input type="text" name="q4_other_text" placeholder="자유서술 (예: 락, 팝, 재즈 등)" />
+</div>
 
             ${sliderQuestion({
               title: "Q5. 이 음악의 장르적 인상이 젠더 이미지를 떠올리는 데 얼마나 영향을 주었다고 생각하나요?",
@@ -867,6 +856,7 @@
               const q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
               const q3 = getCheckedValues("q3");
               const q4 = getCheckedValues("q4");
+              const q4Text = document.querySelector('input[name="q4_other_text"]')?.value.trim() || "";
 
               const errors = [];
 
@@ -878,7 +868,7 @@
               if (!q2) errors.push("Q2에 응답해 주세요.");
               if (!q5) errors.push("Q5에 응답해 주세요.");
               if (q3.length === 0) errors.push("Q3에서 최소 1개를 선택해 주세요.");
-              if (q4.length === 0) errors.push("Q4에서 최소 1개를 선택해 주세요.");
+              if (q4.length === 0 && !q4Text) errors.push("Q4에 응답해 주세요.");
 
               if ((q1 === "3" || q1 === "4") && !q1_1) {
                 errors.push("Q1-1에 응답해 주세요.");
@@ -929,32 +919,17 @@
             </div>
           `,
           html: `
-            <div class="question-block">
-              <div class="question-title">1. 설문에서 젠더 이미지를 판단할 때 본인이 주로 어떤 기준을 사용했다고 생각하시나요?</div>
-              <p class="note">예: 음악학적 지식, 자신의 교육 경험, 문화적 편견, 잘 모르겠다 등</p>
-              <textarea name="free_criteria"></textarea>
-            </div>
+  <div class="question-block">
+    <div class="question-title">1. 설문에서 젠더 이미지를 판단할 때 본인이 주로 어떤 기준을 사용했다고 생각하시나요?</div>
+    <p class="note">예: 음악학적 지식, 자신의 교육 경험, 문화적 편견, 잘 모르겠다 등</p>
+    <textarea name="free_criteria"></textarea>
+  </div>
 
-            <div class="question-block">
-              <div class="question-title">2. 전체적으로 어떤 특징의 음악이 ‘남성적’이라고 느껴졌나요?</div>
-              <textarea name="free_masculine"></textarea>
-            </div>
-
-            <div class="question-block">
-              <div class="question-title">3. 전체적으로 어떤 특징의 음악이 ‘여성적’이라고 느껴졌나요?</div>
-              <textarea name="free_feminine"></textarea>
-            </div>
-
-            <div class="question-block">
-              <div class="question-title">4. 판단하기 어려운 경우(잘 모르겠거나, 중성적임)가 있었다면 왜 어려웠던 것 같으신가요?</div>
-              <textarea name="free_difficulty"></textarea>
-            </div>
-
-            <div class="question-block">
-              <div class="question-title">5. 음악의 ‘젠더성’(여성적인 음악, 남성적인 음악)이라는 것이 있다고 생각하시나요? 있다면 어떤 음악일까요?</div>
-              <textarea name="free_gendered_music"></textarea>
-            </div>
-          `,
+  <div class="question-block">
+    <div class="question-title">2. 음악의 ‘젠더성’(여성적인 음악, 남성적인 음악)이라는 것이 있다고 생각하시나요? 있다면 어떤 음악일까요?</div>
+    <textarea name="free_gendered_music"></textarea>
+  </div>
+`,
           button_label: "제출하기"
         });
       }
