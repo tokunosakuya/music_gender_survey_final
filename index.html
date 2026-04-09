@@ -1068,36 +1068,40 @@ if (savedResponse) {
             });
           },
           on_finish: function(data) {
-            const response = data.response || {};
+  const response = data.response || {};
 
-            response.q1 = document.querySelector('input[name="q1"]')?.value || "";
-            response.q1_1 = document.querySelector('input[name="q1_1"]')?.value || "";
-            response.q1_2 = document.querySelector('input[name="q1_2"]')?.value || "";
-            response.q2 = document.querySelector('input[name="q2"]')?.value || "";
-            response.q3 = getCheckedValues("q3");
-            response.q4 = getCheckedValues("q4");
-            response.q5 = document.querySelector('input[name="q5"]')?.value || "";
-            response.q3_other_text = document.querySelector('input[name="q3_other_text"]')?.value || "";
-            response.q4_other_text = document.querySelector('input[name="q4_other_text"]')?.value || "";
+  // q3, q4는 체크박스라서 직접 보정
+  if (!Array.isArray(response.q3)) {
+    response.q3 = response.q3 ? [response.q3] : [];
+  }
 
-         data.response = response;
-saveMusicResponse(track.id, response);
-removeMusicDraft(track.id);
+  if (!Array.isArray(response.q4)) {
+    response.q4 = response.q4 ? [response.q4] : [];
+  }
 
-const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
-            
-if (backupRaw) {
-  try {
-    const backup = JSON.parse(backupRaw);
-    if (backup && backup.track_id === track.id) {
-      localStorage.removeItem(BACKUP_MUSIC_RESPONSE_KEY);
-    }
-  } catch (e) {}
-}
-          }
-        });
+  // 혹시 undefined면 빈 문자열로만 보정
+  response.q1 = response.q1 || "";
+  response.q1_1 = response.q1_1 || "";
+  response.q1_2 = response.q1_2 || "";
+  response.q2 = response.q2 || "";
+  response.q5 = response.q5 || "";
+  response.q3_other_text = response.q3_other_text || "";
+  response.q4_other_text = response.q4_other_text || "";
+
+  data.response = response;
+  saveMusicResponse(track.id, response);
+  removeMusicDraft(track.id);
+
+  const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
+  if (backupRaw) {
+    try {
+      const backup = JSON.parse(backupRaw);
+      if (backup && backup.track_id === track.id) {
+        localStorage.removeItem(BACKUP_MUSIC_RESPONSE_KEY);
       }
-
+    } catch (e) {}
+  }
+}
       // 자유 서술
       if (!freeResponseDone) {
         timeline.push({
