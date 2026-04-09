@@ -242,6 +242,7 @@ const PARTICIPANT_ID_KEY = "music_gender_participant_id_v5";
 const LISTENED_KEY = "music_gender_listened_v1";
 const BACKUP_MUSIC_RESPONSE_KEY = "music_gender_backup_response_v1";
 const MUSIC_RESPONSE_MAP_KEY = "music_gender_response_map_v1";
+const MUSIC_DRAFT_MAP_KEY = "music_gender_draft_map_v1";
   // =========================
   // 4. 버전별 장르 세트
   // =========================
@@ -278,6 +279,7 @@ const MUSIC_RESPONSE_MAP_KEY = "music_gender_response_map_v1";
   localStorage.removeItem(LISTENED_KEY);
   localStorage.removeItem(BACKUP_MUSIC_RESPONSE_KEY);
   localStorage.removeItem(MUSIC_RESPONSE_MAP_KEY);
+  localStorage.removeItem(MUSIC_DRAFT_MAP_KEY);
 }
 
   function getCheckedValue(name) {
@@ -508,6 +510,37 @@ function getSavedMusicResponse(trackId) {
 function getMusicResponse(trackId) {
   const map = JSON.parse(localStorage.getItem(MUSIC_RESPONSE_MAP_KEY) || "{}");
   return map[trackId] || null;
+}
+
+  function saveMusicDraft(trackId, response) {
+  const map = JSON.parse(localStorage.getItem(MUSIC_DRAFT_MAP_KEY) || "{}");
+  map[trackId] = response;
+  localStorage.setItem(MUSIC_DRAFT_MAP_KEY, JSON.stringify(map));
+}
+
+function getMusicDraft(trackId) {
+  const map = JSON.parse(localStorage.getItem(MUSIC_DRAFT_MAP_KEY) || "{}");
+  return map[trackId] || null;
+}
+
+function removeMusicDraft(trackId) {
+  const map = JSON.parse(localStorage.getItem(MUSIC_DRAFT_MAP_KEY) || "{}");
+  delete map[trackId];
+  localStorage.setItem(MUSIC_DRAFT_MAP_KEY, JSON.stringify(map));
+}
+
+  function collectCurrentMusicResponse(container) {
+  return {
+    q1: container.querySelector('input[name="q1"]')?.value || "",
+    q1_1: container.querySelector('input[name="q1_1"]')?.value || "",
+    q1_2: container.querySelector('input[name="q1_2"]')?.value || "",
+    q2: container.querySelector('input[name="q2"]')?.value || "",
+    q3: Array.from(container.querySelectorAll('input[name="q3"]:checked')).map(el => el.value),
+    q4: Array.from(container.querySelectorAll('input[name="q4"]:checked')).map(el => el.value),
+    q5: container.querySelector('input[name="q5"]')?.value || "",
+    q3_other_text: container.querySelector('input[name="q3_other_text"]')?.value || "",
+    q4_other_text: container.querySelector('input[name="q4_other_text"]')?.value || ""
+  };
 }
   // =========================
   // 6. Supabase에서 전역 버전 가져오기
@@ -889,7 +922,7 @@ function getMusicResponse(trackId) {
             setupSliders(container);
             setupConditionalQuestions(container);
 
-            const savedResponse = getMusicResponse(track.id);
+            const savedResponse = getMusicDraft(track.id) || getMusicResponse(track.id);
             
 if (savedResponse) {
   // slider(hidden input) 복원
@@ -978,15 +1011,18 @@ if (savedResponse) {
             }
 
             if (backBtn) {
-              if (idx === 0) {
-                backBtn.style.visibility = "hidden";
-              } else {
-                backBtn.addEventListener("click", function() {
-                  removeLastCompletedMusicTrialFromProgress();
-                  window.location.reload();
-                });
-              }
-            }
+  if (idx === 0) {
+    backBtn.style.visibility = "hidden";
+  } else {
+    backBtn.addEventListener("click", function() {
+      const draftResponse = collectCurrentMusicResponse(container);
+      saveMusicDraft(track.id, draftResponse);
+
+      removeLastCompletedMusicTrialFromProgress();
+      window.location.reload();
+    });
+  }
+}
 
             form.addEventListener("submit", function(e) {
               const q1 = document.querySelector('input[name="q1"]')?.value || "";
@@ -1041,8 +1077,9 @@ if (savedResponse) {
             response.q3_other_text = document.querySelector('input[name="q3_other_text"]')?.value || "";
             response.q4_other_text = document.querySelector('input[name="q4_other_text"]')?.value || "";
 
-           data.response = response;
+         data.response = response;
 saveMusicResponse(track.id, response);
+removeMusicDraft(track.id);
 
 const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
             
