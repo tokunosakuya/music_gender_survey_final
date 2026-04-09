@@ -447,7 +447,16 @@
     }
     return false;
   }
-
+function getSavedMusicResponse(trackId) {
+  const saved = getSavedProgress();
+  for (let i = saved.length - 1; i >= 0; i--) {
+    const row = saved[i];
+    if (row.page_type === "music_trial" && row.track_id === trackId && row.response) {
+      return row.response;
+    }
+  }
+  return null;
+}
   // =========================
   // 6. Supabase에서 전역 버전 가져오기
   // =========================
@@ -828,6 +837,75 @@
             setupSliders(container);
             setupConditionalQuestions(container);
 
+            const savedResponse = getSavedMusicResponse(track.id);
+
+if (savedResponse) {
+  // slider(hidden input) 복원
+  ["q1", "q1_1", "q1_2", "q2", "q5"].forEach(name => {
+    if (savedResponse[name]) {
+      const hidden = container.querySelector(`input[name="${name}"]`);
+      const slider = container.querySelector(`.likert-slider[data-target="${name}"]`);
+      const current = container.querySelector(`#${name}_current`);
+
+      if (hidden) hidden.value = savedResponse[name];
+      if (slider) slider.value = savedResponse[name];
+
+      if (slider && current) {
+        const labels = Array.from(
+          slider.parentElement.querySelectorAll(".slider-labels div")
+        ).map(el => el.textContent.trim());
+
+        const idx = Number(savedResponse[name]) - 1;
+        if (idx >= 0 && labels[idx]) {
+          current.textContent = `선택됨: ${labels[idx]}`;
+        }
+      }
+    }
+  });
+
+  // 조건부 문항 다시 표시
+  const q1Val = savedResponse.q1 || "";
+  const q11 = container.querySelector("#q1_1_block");
+  const q12 = container.querySelector("#q1_2_block");
+
+  if (q11 && q12) {
+    q11.classList.add("hidden");
+    q12.classList.add("hidden");
+
+    if (q1Val === "3" || q1Val === "4") {
+      q11.classList.remove("hidden");
+    } else if (q1Val === "1" || q1Val === "2") {
+      q12.classList.remove("hidden");
+    }
+  }
+
+  // checkbox 복원
+  if (Array.isArray(savedResponse.q3)) {
+    savedResponse.q3.forEach(val => {
+      const el = container.querySelector(`input[name="q3"][value="${val}"]`);
+      if (el) el.checked = true;
+    });
+  }
+
+  if (Array.isArray(savedResponse.q4)) {
+    savedResponse.q4.forEach(val => {
+      const el = container.querySelector(`input[name="q4"][value="${val}"]`);
+      if (el) el.checked = true;
+    });
+  }
+
+  // text input 복원
+  const q3Other = container.querySelector('input[name="q3_other_text"]');
+  const q4Other = container.querySelector('input[name="q4_other_text"]');
+
+  if (q3Other && savedResponse.q3_other_text !== undefined) {
+    q3Other.value = savedResponse.q3_other_text;
+  }
+  if (q4Other && savedResponse.q4_other_text !== undefined) {
+    q4Other.value = savedResponse.q4_other_text;
+  }
+}
+
             if (nextBtn) nextBtn.disabled = !hasListened.value;
 
            if (hasListened.value) {
@@ -908,6 +986,8 @@
             response.q3 = getCheckedValues("q3");
             response.q4 = getCheckedValues("q4");
             response.q5 = document.querySelector('input[name="q5"]')?.value || "";
+            response.q3_other_text = document.querySelector('input[name="q3_other_text"]')?.value || "";
+            response.q4_other_text = document.querySelector('input[name="q4_other_text"]')?.value || "";
 
             data.response = response;
           }
