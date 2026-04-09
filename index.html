@@ -1012,11 +1012,16 @@ if (savedResponse) {
 
             if (backBtn) {
   if (idx === 0) {
+    if (backBtn) {
+  if (idx === 0) {
     backBtn.style.visibility = "hidden";
   } else {
     backBtn.addEventListener("click", function() {
-      const draftResponse = collectCurrentMusicResponse(container);
-      saveMusicDraft(track.id, draftResponse);
+      const confirmMove = confirm(
+        "이전 곡으로 돌아가면 해당 곡은 다시 응답해야 합니다.\n그래도 이동하시겠습니까?"
+      );
+
+      if (!confirmMove) return;
 
       removeLastCompletedMusicTrialFromProgress();
       window.location.reload();
