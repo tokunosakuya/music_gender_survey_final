@@ -240,6 +240,7 @@
   const ASSIGNMENT_KEY = "music_gender_assignment_v5";
   const PARTICIPANT_ID_KEY = "music_gender_participant_id_v5";
   const LISTENED_KEY = "music_gender_listened_v1";
+  const BACKUP_MUSIC_RESPONSE_KEY = "music_gender_backup_response_v1";
 
   // =========================
   // 4. 버전별 장르 세트
@@ -437,16 +438,23 @@
   }
 
   function removeLastCompletedMusicTrialFromProgress() {
-    const saved = getSavedProgress();
-    for (let i = saved.length - 1; i >= 0; i--) {
-      if (saved[i].page_type === "music_trial") {
-        saved.splice(i, 1);
-        localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
-        return true;
-      }
+  const saved = getSavedProgress();
+
+  for (let i = saved.length - 1; i >= 0; i--) {
+    if (saved[i].page_type === "music_trial") {
+      localStorage.setItem(
+        BACKUP_MUSIC_RESPONSE_KEY,
+        JSON.stringify(saved[i])
+      );
+
+      saved.splice(i, 1);
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+      return true;
     }
-    return false;
   }
+  return false;
+}
+    
 function getSavedMusicResponse(trackId) {
   const saved = getSavedProgress();
   for (let i = saved.length - 1; i >= 0; i--) {
@@ -455,6 +463,26 @@ function getSavedMusicResponse(trackId) {
       return row.response;
     }
   }
+  return null;
+}
+  function getBackedUpMusicResponse(trackId) {
+  const raw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      parsed.page_type === "music_trial" &&
+      parsed.track_id === trackId &&
+      parsed.response
+    ) {
+      return parsed.response;
+    }
+  } catch (e) {
+    console.warn("backup response 파싱 실패");
+  }
+
   return null;
 }
   // =========================
@@ -837,7 +865,8 @@ function getSavedMusicResponse(trackId) {
             setupSliders(container);
             setupConditionalQuestions(container);
 
-            const savedResponse = getSavedMusicResponse(track.id);
+            const savedResponse =
+  getSavedMusicResponse(track.id) || getBackedUpMusicResponse(track.id);
 
 if (savedResponse) {
   // slider(hidden input) 복원
@@ -990,6 +1019,15 @@ if (savedResponse) {
             response.q4_other_text = document.querySelector('input[name="q4_other_text"]')?.value || "";
 
             data.response = response;
+            const backupRaw = localStorage.getItem(BACKUP_MUSIC_RESPONSE_KEY);
+if (backupRaw) {
+  try {
+    const backup = JSON.parse(backupRaw);
+    if (backup && backup.track_id === track.id) {
+      localStorage.removeItem(BACKUP_MUSIC_RESPONSE_KEY);
+    }
+  } catch (e) {}
+}
           }
         });
       }
