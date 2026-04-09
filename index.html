@@ -239,6 +239,7 @@
   const SAVE_KEY = "music_gender_survey_progress_v5";
   const ASSIGNMENT_KEY = "music_gender_assignment_v5";
   const PARTICIPANT_ID_KEY = "music_gender_participant_id_v5";
+  const LISTENED_KEY = "music_gender_listened_v1";
 
   // =========================
   // 4. 버전별 장르 세트
@@ -821,16 +822,25 @@
             const audioStatus = container.querySelector("#audio-status");
             const errorBox = container.querySelector("#validation-error");
             const backBtn = container.querySelector("#back-btn");
-            const hasListened = { value: false };
+            const listenedMap = JSON.parse(localStorage.getItem(LISTENED_KEY) || "{}");
+            const hasListened = { value: !!listenedMap[track.id] };
 
             setupSliders(container);
             setupConditionalQuestions(container);
 
-            if (nextBtn) nextBtn.disabled = true;
+            if (nextBtn) nextBtn.disabled = !hasListened.value;
+
+           if (hasListened.value) {
+           audioStatus.textContent = "이미 청취한 곡입니다. 바로 진행할 수 있습니다.";
+           audioStatus.classList.add("done");
+              }
 
             if (audio) {
               audio.addEventListener("ended", function() {
-                hasListened.value = true;
+              hasListened.value = true;
+
+            listenedMap[track.id] = true;
+              localStorage.setItem(LISTENED_KEY, JSON.stringify(listenedMap));
                 if (nextBtn) nextBtn.disabled = false;
                 audioStatus.textContent = "청취 완료. 이제 제출할 수 있습니다.";
                 audioStatus.classList.add("done");
