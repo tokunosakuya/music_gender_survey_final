@@ -1070,7 +1070,6 @@ if (savedResponse) {
           on_finish: function(data) {
   const response = data.response || {};
 
-  // q3, q4는 체크박스라서 직접 보정
   if (!Array.isArray(response.q3)) {
     response.q3 = response.q3 ? [response.q3] : [];
   }
@@ -1079,7 +1078,6 @@ if (savedResponse) {
     response.q4 = response.q4 ? [response.q4] : [];
   }
 
-  // 혹시 undefined면 빈 문자열로만 보정
   response.q1 = response.q1 || "";
   response.q1_1 = response.q1_1 || "";
   response.q1_2 = response.q1_2 || "";
